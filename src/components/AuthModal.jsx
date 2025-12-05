@@ -5,7 +5,7 @@ import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
 import { useAuth } from "../contexts/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import apiClient from "../api/apiClient";
 const AuthModal = ({ isOpen, onClose, initialRole = "" }) => {
   const [mode, setMode] = useState("signup");
   const [role, setRole] = useState(initialRole);
@@ -35,12 +35,13 @@ const AuthModal = ({ isOpen, onClose, initialRole = "" }) => {
         const lng = pos.coords.longitude;
 
         try {
-          const response = await fetch(
-            `http://localhost:5000/api/auth/location?lat=${lat}&lng=${lng}`
+          const response = await apiClient.get(
+            
+            `/auth/location?lat=${lat}&lng=${lng}`
           );
 
-          const data = await response.json();
-          console.log("📌 API Response:", data);
+          const data = await response.data;
+          console.log("📌 API Response:", response);
 
           if (data?.address) {
             setAddress(data.address);

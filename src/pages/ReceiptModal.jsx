@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js/dist/html2pdf";
 import axios from "axios";
 import { Modal } from "../components/ui/Modal";
+import apiClient from "../api/apiClient";
 
 export default function ReceiptModal({ isOpen, onClose, data }) {
   if (!data) return null;
@@ -47,9 +48,9 @@ export default function ReceiptModal({ isOpen, onClose, data }) {
 
     setLoading(true);
     
-    axios
+    apiClient
       .get(
-        `http://localhost:5000/api/orders/delivery-fee`,
+        `/orders/delivery-fee`,
         {
           params: {
             farmerId,
