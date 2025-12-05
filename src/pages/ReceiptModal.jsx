@@ -1,0 +1,177 @@
+import React, { useEffect, useState } from "react";
+import html2pdf from "html2pdf.js/dist/html2pdf";
+import axios from "axios";
+import { Modal } from "../components/ui/Modal";
+
+export default function ReceiptModal({ isOpen, onClose, data }) {
+  if (!data) return null;
+
+  console.log("🧾 RECEIPT MODAL DATA:", data);
+
+  // ==== Backend flattened fields ====
+  const {
+    orderId,
+    crop,
+    quantity,
+    pricePerKg,
+    farmerId,
+    farmerName,
+    farmerAddress,
+    farmerPhone,
+    buyerId,
+    buyerName,
+    buyerAddress,
+    buyerPhone,
+    paidAt,
+  } = data;
+
+  // ========= useStates =========
+  const [distance, setDistance] = useState("-");
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // ========= Basic Calculations =========
+  const subtotal = quantity * pricePerKg;
+  const tax = subtotal * 0.02;
+  const platformFee = 4;
+  const grandTotal = subtotal + tax + deliveryFee + platformFee;
+
+  /* --------------------------------------------------
+     FETCH DELIVERY FEE — AXIOS
+  ---------------------------------------------------*/
+  useEffect(() => {
+    if (!farmerId || !buyerId) {
+      console.warn("⚠️ Missing farmerId/buyerId. Skipping delivery fee fetch.");
+      return;
+    }
+
+    setLoading(true);
+    
+    axios
+      .get(
+        `http://localhost:5000/api/orders/delivery-fee`,
+        {
+          params: {
+            farmerId,
+            buyerId,
+          },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          withCredentials: true,
+        }
+      )
+      .then((res) => {
+        console.log("🚚 DELIVERY API RESPONSE:", res.data);
+
+        if (typeof res.data.deliveryFee === "number")
+          setDeliveryFee(res.data.deliveryFee);
+
+        if (typeof res.data.distance === "number")
+          setDistance(res.data.distance);
+
+      })
+      .catch((err) => {
+        console.error("❌ Delivery API failed:", err);
+      })
+      .finally(() => setLoading(false));
+  }, [farmerId, buyerId]);
+
+  /* --------------------------------------------------
+     PDF Download
+  ---------------------------------------------------*/
+  const downloadPDF = () => {
+    html2pdf().from(document.getElementById("invoice")).save();
+  };
+
+  /* --------------------------------------------------
+     UI
+  ---------------------------------------------------*/
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Receipt" size="lg">
+      {/* Local CSS */}
+      <style>{`
+        .header {
+          background:#084a70;
+          color:white;
+          padding:12px;
+          font-size:20px;
+          font-weight:600;
+          text-align:center
+        }
+        th {
+          background:#084a70;
+          color:white;
+        }
+      `}</style>
+
+      <div id="invoice" className="p-4">
+        {/* TITLE */}
+        <div className="header">AgriConnect Marketplace</div>
+
+        {/* SELLER block */}
+        <div className="mt-3">
+          <strong>Seller:</strong> {farmerName} <br />
+          <strong>Phone:</strong> {farmerPhone} <br />
+          <strong>Address:</strong> {farmerAddress}
+        </div>
+
+        {/* ORDER block */}
+        <div className="mt-3">
+          <strong>Order No:</strong> {orderId} <br />
+          <strong>Date:</strong>{" "}
+          {paidAt ? new Date(paidAt).toLocaleDateString() : "--"} <br />
+          <strong>Crop:</strong> {crop}
+        </div>
+
+        {/* ITEMS TABLE */}
+        <table className="table table-bordered text-center mt-4">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Subtotal</th>
+              <th>Tax 2%</th>
+              <th>Distance</th>
+              <th>Delivery Fee</th>
+              <th>Platform</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>{crop}</td>
+              <td>{quantity} kg</td>
+              <td>₹{pricePerKg}</td>
+              <td>₹{subtotal.toFixed(2)}</td>
+              <td>₹{tax.toFixed(2)}</td>
+              <td>
+                {distance !== "-" ? `${distance} km` : (loading ? "Loading..." : "-")}
+              </td>
+              <td>₹{deliveryFee.toFixed(2)}</td>
+              <td>₹{platformFee.toFixed(2)}</td>
+              <td>₹{grandTotal.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* BUYER block */}
+        <div className="mt-3">
+          <strong>Buyer:</strong> {buyerName} <br />
+          <strong>Phone:</strong> {buyerPhone} <br />
+          <strong>Address:</strong> {buyerAddress}
+        </div>
+
+        {/* PDF BUTTON */}
+        <button
+          className="btn btn-outline-primary w-100 mt-3"
+          onClick={downloadPDF}
+        >
+          📄 Download Invoice
+        </button>
+      </div>
+    </Modal>
+  );
+}
