@@ -2,8 +2,8 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  // baseURL: "http://localhost:5000/api",
-  baseURL:"https://farmerbackend-bn6n.onrender.com/api",
+  baseURL: "http://localhost:5000/api",
+  // baseURL:"https://farmerbackend-bn6n.onrender.com/api",
 });
 
 // ✅ Always attach the *current* token before each request

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js/dist/html2pdf";
 import axios from "axios";
+import apiClient from "../api/apiClient";
 import { Modal } from "../components/ui/Modal";
 import { payForOrder } from "../api/Orders";
 
@@ -46,11 +47,9 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
 
     setLoading(true);
 
-    axios
-      .get(`http://localhost:5000/api/orders/delivery-fee`, {
+    apiClient
+      .get(`/orders/delivery-fee`, {
         params: { farmerId, buyerId },
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        withCredentials: true,
       })
       .then((res) => {
         if (typeof res.data.deliveryFee === "number")
@@ -62,7 +61,6 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
       .catch((err) => console.error("Delivery Fee Error:", err))
       .finally(() => setLoading(false));
   }, [farmerId, buyerId]);
-
   /* --------------------------------------------------
      📌 DOWNLOAD PDF BUTTON
   ---------------------------------------------------*/
