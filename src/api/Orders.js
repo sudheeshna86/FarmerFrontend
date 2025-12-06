@@ -60,10 +60,12 @@ export const assignDriver = async (orderId, driverIdsArray) => {
 
 // Driver verifies OTP
 export const verifyDeliveryOTP = async (orderId, otp) => {
-  const res = await apiClient.patch(`/orders/${orderId}/verify-otp`, { otp });
+  console.log(otp)
+  const res = await apiClient.patch(`/orders/${orderId}/verify-otp`, {otp});
   return res.data;
 };
 export const getReceipt = async (orderId) => {
+  console.log("entered receipt");
   const res = await apiClient.get(`/orders/${orderId}/receipt`);
   return res.data;
 };

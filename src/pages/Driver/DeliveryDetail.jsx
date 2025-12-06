@@ -199,7 +199,7 @@ export default function DriverDeliveries() {
 
                     <div className="small mt-3">
                       <MapPin size={16} className="me-2 text-success" />
-                      Pickup: {order.listing?.location}
+                      Pickup: {order.farmer?.address}
                     </div>
 
                     <div className="small mt-1 mb-3">
@@ -296,7 +296,7 @@ export default function DriverDeliveries() {
 
                   <div className="small mt-2">
                     <MapPin size={16} className="me-2 text-success" />
-                    Pickup: {order.listing?.location}
+                    Pickup: {order.farmer?.address}
                   </div>
 
                   <div className="small mt-2">

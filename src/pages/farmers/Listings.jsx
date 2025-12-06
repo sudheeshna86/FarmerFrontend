@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, MapPin, Calendar, Package, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, Package, Tag } from "lucide-react";
 import { useLanguage } from "../../contexts/LanguageContext";
 import AddListingModal from "../../components/farmer/AddListingModal";
-import { getMyListings,updateFarmerListing ,deleteFarmerListing} from "../../api/Farmerlist"; // ✅ make sure delete API exists
+import { getMyListings, deleteFarmerListing } from "../../api/Farmerlist";
 
 export default function Listings() {
   const { t } = useLanguage();
@@ -10,7 +10,6 @@ export default function Listings() {
   const [viewMode, setViewMode] = useState("grid");
   const [listings, setListings] = useState([]);
   const [editListing, setEditListing] = useState(null);
-
   const [loading, setLoading] = useState(true);
 
   // 🟢 Fetch listings on mount
@@ -32,27 +31,24 @@ export default function Listings() {
   };
 
   // 🗑️ Handle Delete Listing
-const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this listing?")) {
-    try {
-      await deleteFarmerListing(id);
-      alert("Listing deleted successfully!");
-      setListings((prev) => prev.filter((l) => l._id !== id));
-    } catch (error) {
-      console.error("❌ Failed to delete listing:", error);
-      alert("Failed to delete listing");
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this listing?")) {
+      try {
+        await deleteFarmerListing(id);
+        alert("Listing deleted successfully!");
+        setListings((prev) => prev.filter((l) => l._id !== id));
+      } catch (error) {
+        console.error("❌ Failed to delete listing:", error);
+        alert("Failed to delete listing");
+      }
     }
-  }
-};
+  };
 
-
-  // ✏️ Handle Edit (can be improved later)
-// ✏️ Handle Edit (open modal pre-filled)
-const handleEdit = (listing) => {
-  setEditListing(listing);
-  setAddModalOpen(true);
-};
-
+  // ✏️ Handle Edit (open modal pre-filled)
+  const handleEdit = (listing) => {
+    setEditListing(listing);
+    setAddModalOpen(true);
+  };
 
   if (loading) {
     return (
@@ -143,9 +139,6 @@ const handleEdit = (listing) => {
                         {listing.quantity} kg • ₹{listing.pricePerKg}/kg
                       </div>
                       <div className="d-flex align-items-center mb-1">
-                        <MapPin size={16} className="me-2" /> {listing.location}
-                      </div>
-                      <div className="d-flex align-items-center mb-1">
                         <Calendar size={16} className="me-2" /> Added recently
                       </div>
                     </div>
@@ -180,20 +173,18 @@ const handleEdit = (listing) => {
         </div>
       )}
 
-      {/* Add Listing Modal */}
-     {/* Add/Edit Listing Modal */}
-{addModalOpen && (
-  <AddListingModal
-    isOpen={addModalOpen}
-    existingData={editListing} // 🟢 Pass data for editing
-    onClose={() => {
-      setAddModalOpen(false);
-      setEditListing(null);
-      setTimeout(() => fetchListings(), 1000);
-    }}
-  />
-)}
-
+      {/* Add/Edit Listing Modal */}
+      {addModalOpen && (
+        <AddListingModal
+          isOpen={addModalOpen}
+          existingData={editListing}
+          onClose={() => {
+            setAddModalOpen(false);
+            setEditListing(null);
+            setTimeout(() => fetchListings(), 1000);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -137,9 +137,9 @@ const handleViewReceipt = async (orderId) => {
         <div className="row g-4">
           {orders.map((order) => {
             const { color, label } = getStatusBadge(order.status);
-
+            console.log(order)
             return (
-              <div key={order._id} className="col-md-6">
+              <div key={order._id} className="col-md-4">
                 <Card className="p-4 shadow-sm rounded-3">
                   {/* header */}
                   <div className="d-flex align-items-center mb-3">
@@ -175,10 +175,10 @@ const handleViewReceipt = async (orderId) => {
 
                   {/* location */}
                   <div className="bg-light p-3 rounded mb-3">
-                    <div className="text-success fw-semibold">
-                      Pickup: {order.listing?.location}
+                    <div className="text-success fw-semibold" style={{ fontSize: "0.75rem" }}>
+                      Pickup: {order.farmer.address}
                     </div>
-                    <div className="text-danger fw-semibold">
+                    <div className="text-danger fw-semibold" style={{ fontSize: "0.75rem" }}>
                       Delivery: {order.buyer?.address || "—"}
                     </div>
                   </div>

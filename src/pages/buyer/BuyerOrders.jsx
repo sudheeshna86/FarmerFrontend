@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Clock, Package, Phone, User, Check, X, Truck } from "lucide-react";
+import { MapPin, Clock, Package, Phone, User, Check, X } from "lucide-react";
 import {
   createOrderFromOffer,
   getMyOrders,
   payForOrder,
+  getReceipt,
 } from "../../api/Orders";
 import {
   getMyOffers,
@@ -12,9 +13,7 @@ import {
   deleteOffer,
 } from "../../api/BuyerOffers";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { getReceipt } from "../../api/Orders";
 import ReceiptModal from "../ReceiptModal";
-
 
 export default function BuyerOrders() {
   const [activeTab, setActiveTab] = useState("offers");
@@ -22,8 +21,7 @@ export default function BuyerOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
-const [receiptData, setReceiptData] = useState(null);
-
+  const [receiptData, setReceiptData] = useState(null);
 
   useEffect(() => {
     fetchAllData();
@@ -68,15 +66,44 @@ const [receiptData, setReceiptData] = useState(null);
       alert(err?.response?.data?.message || "Failed to accept counter");
     }
   };
-  const handleViewReceipt = async (orderId) => {
+
+const handleViewReceipt = async (orderId) => {
   try {
-    const data = await getReceipt(orderId);
-    setReceiptData(data);
+    console.log("entered frontend receipt")
+    const data = await getReceipt(orderId);   // API response]
+    console.log(data);
+    const order = orders.find(o => o._id === orderId); // local full order
+
+    setReceiptData({
+      ...data,
+
+      // required for modal
+      status: order.status,
+      orderId: order._id,
+      crop: order.listing.cropName,
+      quantity: order.quantity,
+      pricePerKg: order.finalPrice,
+
+      // buyer
+      buyerId: order.buyer._id,
+      buyerName: order.buyer.name,
+      buyerPhone: order.buyer.phone,
+      buyerAddress: order.buyer.address,
+
+      // farmer
+      farmerId: order.farmer._id,
+      farmerName: order.farmer.name,
+      farmerPhone: order.farmer.phone,
+      farmerAddress: order.farmer.address,
+    });
+
     setShowReceiptModal(true);
   } catch (err) {
     alert("Failed to load receipt");
   }
 };
+
+
 
 
   // ❌ Buyer rejects counter
@@ -132,15 +159,18 @@ const [receiptData, setReceiptData] = useState(null);
     const s = status?.toLowerCase();
 
     if (s === "pending_payment")
-      return <span className="badge bg-warning text-dark">Awaiting Payment</span>;
+      return (
+        <span className="badge bg-warning text-dark">Awaiting Payment</span>
+      );
 
     if (s === "paid")
-      return <span className="badge bg-info text-dark">Paid — Awaiting Driver</span>;
+      return (
+        <span className="badge bg-info text-dark">Paid — Awaiting Driver</span>
+      );
 
     if (s === "driver_assigned")
       return <span className="badge bg-primary">Driver Assigned</span>;
 
-    /* ⭐⭐ ADDED: OTP VERIFIED STATUS ⭐⭐ */
     if (s === "otp_verified")
       return <span className="badge bg-primary">OTP Verified</span>;
 
@@ -161,7 +191,9 @@ const [receiptData, setReceiptData] = useState(null);
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "offers" ? "active fw-bold" : ""}`}
+            className={`nav-link ${
+              activeTab === "offers" ? "active fw-bold" : ""
+            }`}
             onClick={() => setActiveTab("offers")}
           >
             💬 Offers
@@ -169,7 +201,9 @@ const [receiptData, setReceiptData] = useState(null);
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "orders" ? "active fw-bold" : ""}`}
+            className={`nav-link ${
+              activeTab === "orders" ? "active fw-bold" : ""
+            }`}
             onClick={() => setActiveTab("orders")}
           >
             🧾 Orders
@@ -189,103 +223,110 @@ const [receiptData, setReceiptData] = useState(null);
           </div>
         ) : (
           <div className="row g-4">
-            {offers.map((offer) => (
-              <div className="col-md-6 col-lg-4" key={offer._id}>
-                <div className="card shadow-sm border-0 h-100">
-                  <img
-                    src={
-                      offer.listing?.imageUrl
-                        ? offer.listing.imageUrl.startsWith("http")
-                          ? offer.listing.imageUrl
-                          : `http://localhost:5000${offer.listing.imageUrl}`
-                        : "https://via.placeholder.com/400"
-                    }
-                    alt={offer.listing?.cropName || "Crop"}
-                    className="card-img-top"
-                    style={{ height: "180px", objectFit: "cover" }}
-                  />
-                  <div className="card-body">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <h5 className="fw-bold text-dark mb-0">
-                        {offer.listing?.cropName}
-                      </h5>
-                      {getStatusBadge(offer)}
-                    </div>
+            {offers.map((offer) => {
+              // ✅ put logs HERE
+              console.log("Listing quantity:", offer.listing.quantity);
+              console.log("Full listing object:", offer.listing);
 
-                    <p className="text-muted small mb-2">
-                      Category: {offer.listing?.category}
-                    </p>
-                    <p className="fw-semibold text-success mb-2">
-                      ₹{offer.offeredPrice}/kg • {offer.quantity} kg
-                    </p>
-
-                    {/* Offer Status Logic */}
-                    {offer.status === "pending" && (
-                      <div className="alert alert-warning small">
-                        Waiting for farmer’s response.
+              return (
+                <div className="col-md-6 col-lg-4" key={offer._id}>
+                  <div className="card shadow-sm border-0 h-100">
+                    <img
+                      src={
+                        offer.listing?.imageUrl
+                          ? offer.listing.imageUrl.startsWith("http")
+                            ? offer.listing.imageUrl
+                            : `http://localhost:5000${offer.listing.imageUrl}`
+                          : "https://via.placeholder.com/400"
+                      }
+                      alt={offer.listing?.cropName || "Crop"}
+                      className="card-img-top"
+                      style={{ height: "180px", objectFit: "cover" }}
+                    />
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <h5 className="fw-bold text-dark mb-0">
+                          {offer.listing?.cropName}
+                        </h5>
+                        {getStatusBadge(offer)}
                       </div>
-                    )}
 
-                    {offer.status === "countered" &&
-                      offer.lastActionBy === "buyer" && (
-                        <div className="alert alert-info small">
-                          You countered ₹{offer.counterOfferPrice}/kg — waiting
-                          for farmer.
+                      <p className="text-muted small mb-2">
+                        Category: {offer.listing?.category}
+                      </p>
+                      <p className="fw-semibold text-success mb-2">
+                        ₹{offer.listing.pricePerKg}/kg •{" "}
+                        {offer.listing.quantity} kg
+                      </p>
+
+                      {/* Offer Status Logic */}
+                      {offer.status === "pending" && (
+                        <div className="alert alert-warning small">
+                          Waiting for farmer’s response.
                         </div>
                       )}
 
-                    {offer.status === "countered" &&
-                      offer.lastActionBy === "farmer" && (
-                        <>
-                          <div className="alert alert-primary small">
-                            Farmer countered ₹{offer.counterOfferPrice}/kg
+                      {offer.status === "countered" &&
+                        offer.lastActionBy === "buyer" && (
+                          <div className="alert alert-info small">
+                            You countered ₹{offer.counterOfferPrice}/kg — waiting
+                            for farmer.
                           </div>
-                          <div className="d-flex gap-2">
-                            <button
-                              className="btn btn-sm btn-success flex-fill"
-                              onClick={() => handleAcceptCounter(offer._id)}
-                            >
-                              <Check size={14} /> Accept
-                            </button>
-                            <button
-                              className="btn btn-sm btn-outline-danger flex-fill"
-                              onClick={() => handleRejectCounter(offer._id)}
-                            >
-                              <X size={14} /> Reject
-                            </button>
-                          </div>
-                        </>
+                        )}
+
+                      {offer.status === "countered" &&
+                        offer.lastActionBy === "farmer" && (
+                          <>
+                            <div className="alert alert-primary small">
+                              Farmer countered ₹{offer.counterOfferPrice}/kg
+                            </div>
+                            <div className="d-flex gap-2">
+                              <button
+                                className="btn btn-sm btn-success flex-fill"
+                                onClick={() => handleAcceptCounter(offer._id)}
+                              >
+                                <Check size={14} /> Accept
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-danger flex-fill"
+                                onClick={() => handleRejectCounter(offer._id)}
+                              >
+                                <X size={14} /> Reject
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                      {offer.status === "rejected" && (
+                        <div className="d-flex gap-2 mt-2">
+                          <button
+                            className="btn btn-sm btn-outline-danger flex-fill"
+                            onClick={() => handleRemove(offer._id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
                       )}
 
-                    {offer.status === "rejected" && (
-                      <div className="d-flex gap-2 mt-2">
-                        <button
-                          className="btn btn-sm btn-outline-danger flex-fill"
-                          onClick={() => handleRemove(offer._id)}
-                        >
-                          Remove
-                        </button>
+                      <hr className="my-2" />
+
+                      <div className="text-muted small d-flex align-items-center">
+                        <User size={14} className="me-2 text-success" />
+                        Farmer: {offer.listing?.farmer?.name || "N/A"}
                       </div>
-                    )}
-
-                    <hr className="my-2" />
-
-                    <div className="text-muted small d-flex align-items-center">
-                      <User size={14} className="me-2 text-success" />
-                      Farmer: {offer.listing?.farmer?.name || "N/A"}
-                    </div>
-                    <div className="text-muted small d-flex align-items-center">
-                      <Phone size={14} className="me-2 text-success" />
-                      {offer.listing?.farmer?.phone || "N/A"}
-                    </div>
-                    <div className="text-muted small mt-2">
-                      <Clock size={14} className="me-1" />
-                      {new Date(offer.createdAt).toLocaleString()}
+                      <div className="text-muted small d-flex align-items-center">
+                        <Phone size={14} className="me-2 text-success" />
+                        {offer.listing?.farmer?.phone || "N/A"}
+                      </div>
+                      <div className="text-muted small mt-2">
+                        <Clock size={14} className="me-1" />
+                        {new Date(offer.createdAt).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       ) : (
@@ -325,15 +366,18 @@ const [receiptData, setReceiptData] = useState(null);
                     {getOrderStage(order.status)}
 
                     {/* 💳 Payment button */}
-                    {order.status === "pending_payment" && (
-                      <button
-                        className="btn btn-success btn-sm mt-2 w-100"
-                        onClick={() => handlePayment(order._id)}
-                      >
-                        💳 Make Payment
-                      </button>
-                    )}
-                    {order.status !== "pending_payment" && (
+               {/* 🟡 If pending_payment → show VIEW BILL */}
+{order.status === "pending_payment" && (
+  <button
+    className="btn btn-primary btn-sm mt-2 w-100"
+    onClick={() => handleViewReceipt(order._id)}  // opens modal with pay button
+  >
+    📄 View Bill
+  </button>
+)}
+
+{/* 🟢 If already paid or above → show VIEW RECEIPT */}
+{order.status !== "pending_payment" && (
   <button
     className="btn btn-outline-secondary btn-sm mt-2 w-100"
     onClick={() => handleViewReceipt(order._id)}
@@ -344,33 +388,31 @@ const [receiptData, setReceiptData] = useState(null);
 
 
                     {/* 🚚 Driver Info */}
-                    <div className="bg-light rounded-3 p-3 mt-3 mb-3">
-                      <div className="text-success fw-semibold">
-                        Pickup: {order.listing?.location || "N/A"}
-                      </div>
-                      <div className="text-danger fw-semibold mb-2">
-                        Delivery: {order.buyer?.address || "—"}
-                      </div>
+<div className="bg-light rounded-3 p-3 mt-3 mb-3">
 
-                      {(order.status === "driver_assigned" ||
-                        order.status === "otp_verified") &&
-                        order.driver && (
-                          <div className="mt-2 p-2 rounded bg-white border small">
-                            <div className="text-dark fw-semibold">
-                              🚚 Driver:{" "}
-                              <span className="text-success">
-                                {order.driver?.name || "N/A"}
-                              </span>
-                            </div>
-                            <div className="text-dark fw-semibold">
-                              📞 Phone:{" "}
-                              <span className="text-primary">
-                                {order.driver?.phone || "N/A"}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                    </div>
+  <div className="fw-semibold text-success" style={{ fontSize: "0.75rem" }}>
+    Pickup: {order.farmer?.address || "N/A"}
+  </div>
+
+  <div className="fw-semibold text-danger mb-2" style={{ fontSize: "0.75rem" }}>
+    Delivery: {order.buyer?.address || "—"}
+  </div>
+
+  {(order.status === "driver_assigned" || order.status === "otp_verified") &&
+    order.driver && (
+      <div className="mt-2 p-2 rounded bg-white border small">
+        <div className="text-dark fw-semibold">
+          🚚 Driver:{" "}
+          <span className="text-success">{order.driver?.name || "N/A"}</span>
+        </div>
+        <div className="text-dark fw-semibold">
+          📞 Phone:{" "}
+          <span className="text-primary">{order.driver?.phone || "N/A"}</span>
+        </div>
+      </div>
+    )}
+</div>
+
 
                     <hr className="my-2" />
 
@@ -401,9 +443,10 @@ const [receiptData, setReceiptData] = useState(null);
   isOpen={showReceiptModal}
   onClose={() => setShowReceiptModal(false)}
   data={receiptData}
+  refresh={fetchAllData}
 />
+
+
     </div>
-    
   );
 }
-
