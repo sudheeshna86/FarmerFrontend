@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import {
+  MapPin,
+  Clock,
+  Package,
+  Phone,
+  User,
+  Check,
+  X,
+  MessageSquare,
+} from "lucide-react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
-import { Check, X, MessageSquare, User } from "lucide-react";
 import {
   getFarmerOffers,
   acceptOffer as apiAcceptOffer,
@@ -13,7 +22,7 @@ import {
 export default function Offers() {
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("offers"); // offers | counters
+  const [activeTab, setActiveTab] = useState("offers");
   const [showCounter, setShowCounter] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [counterPrice, setCounterPrice] = useState("");
@@ -27,249 +36,230 @@ export default function Offers() {
     try {
       setLoading(true);
       const data = await getFarmerOffers();
-      console.log("📦 Offers from server:", data);
 
-      const mapped = (data || []).map((o) => ({
-        id: o._id,
-        listingId: o.listing?._id,
-        crop: o.listing?.cropName || "—",
-        buyerName: o.buyer?.name || "Unknown Buyer",
-        buyerPhone: o.buyer?.phone || "",
-        qty: o.quantity || 0,
-        priceOffered: o.offeredPrice ?? 0,
-        listingPrice: o.listing?.pricePerKg ?? null,
-        message: o.notes || "",
-        status: o.status?.toLowerCase().trim() || "pending",
-        lastActionBy: o.lastActionBy || null, // ✅ include this
-        received: o.createdAt || new Date(),
-        counterPrice: o.counterOfferPrice ?? null,
-        raw: o,
-      }));
+      const mapped = (data || []).map((o) => {
+        const counterOffers = o.counterOffers || [];
+        const last = counterOffers[counterOffers.length - 1];
+        console.log(o.listing.actualquantity)
+        return {
+          id: o._id,
+          listingId: o.listing?._id,
+          crop: o.listing?.cropName,
+          buyerName: o.buyer?.name,
+          buyerPhone: o.buyer?.phone,
+          qty: o.quantity,
+          priceOffered: o.offeredPrice,
+          actualQuantity: o.listing.actualquantity, 
+          listingPrice: o.listing?.pricePerKg,
+          message: o.notes || "",
+          status: o.status,
+          received: o.createdAt,
+          counterOffers,
+          lastCounterBy: last?.counteredBy || null,
+          lastCounterPrice: last?.price || null,
+          raw: o,
+        };
+      });
+
       setOffers(mapped);
     } catch (err) {
-      console.error("❌ Failed to fetch farmer offers:", err);
+      console.error("Error fetching offers", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // 🟢 Filter Offers and Counters
-  const offersReceived = offers.filter(
-    (o) => o.status?.toLowerCase() === "pending"
-  );
-  const counteredOffers = offers.filter(
-    (o) => o.status?.toLowerCase() === "countered"
-  );
+  const offersReceived = offers.filter((o) => o.status === "pending");
+  const counteredOffers = offers.filter((o) => o.status === "countered");
 
-  const getStatusColor = (status) => {
-    const s = status?.toLowerCase();
-    if (s === "pending") return "warning";
-    if (s === "accepted") return "success";
-    if (s === "rejected") return "danger";
-    if (s === "countered") return "primary";
-    return "secondary";
-  };
-
-  // 🟢 Accept Offer
-  const handleAccept = async (offerId) => {
+  const handleAccept = async (id) => {
     if (!window.confirm("Accept this offer?")) return;
     try {
       setActionLoading(true);
-      await apiAcceptOffer(offerId);
-      await fetchOffers();
+      await apiAcceptOffer(id);
+      fetchOffers();
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to accept offer");
+      alert("Failed to accept offer");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // 🟢 Reject Offer
-  const handleReject = async (offerId) => {
+  const handleReject = async (id) => {
     if (!window.confirm("Reject this offer?")) return;
     try {
       setActionLoading(true);
-      await apiRejectOffer(offerId);
-      await fetchOffers();
+      await apiRejectOffer(id);
+      fetchOffers();
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to reject offer");
+      alert("Failed to reject offer");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // 🟢 Open Counter Modal
   const openCounterModal = (offer) => {
     setSelectedOffer(offer);
-    setCounterPrice(offer.counterPrice ?? "");
+    setCounterPrice("");
     setShowCounter(true);
   };
 
-  // 🟢 Send Counter Offer
   const handleCounterSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedOffer || !counterPrice || Number(counterPrice) <= 0) {
-      alert("Please enter a valid counter price");
+    if (!counterPrice || Number(counterPrice) <= 0) {
+      alert("Enter valid price");
       return;
     }
 
     try {
       setActionLoading(true);
-      const payload = {
+      await apiCounterOffer(selectedOffer.id, {
         counterOfferPrice: Number(counterPrice),
         notes: `Farmer countered with ₹${counterPrice}/kg`,
-      };
-      await apiCounterOffer(selectedOffer.id, payload);
-      await fetchOffers();
+      });
+
       setShowCounter(false);
-      setSelectedOffer(null);
       setCounterPrice("");
+      fetchOffers();
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to send counter offer");
+      alert("Failed to send counter");
     } finally {
       setActionLoading(false);
     }
   };
 
-  // 🟢 Offer Card (for both tabs)
   const renderOfferCard = (offer) => {
-    const totalValue = (offer.qty || 0) * (offer.priceOffered || 0);
-    const isFarmerCountered =
-      offer.status === "countered" && offer.lastActionBy === "farmer";
-    const isBuyerCountered =
-      offer.status === "countered" && offer.lastActionBy === "buyer";
+    const last = offer.counterOffers[offer.counterOffers.length - 1];
+    const isCountered = offer.status === "countered";
+    const isLastByBuyer = isCountered && last?.counteredBy === "buyer";
+    const isLastByFarmer = isCountered && last?.counteredBy === "farmer";
 
     return (
-      <div className="col-12 col-sm-6 col-md-4" key={offer.id}>
-        <Card className="p-3 shadow-sm border rounded-3 small">
+      <div className="col-md-4" key={offer.id}>
+        <Card className="p-3 shadow-sm rounded-3 small">
           <div className="d-flex align-items-center mb-2">
-            <User size={22} className="me-2 text-warning" />
+            <User size={20} className="me-2 text-warning" />
             <span className="fw-bold">{offer.buyerName}</span>
-            <span
-              className={`badge bg-${getStatusColor(
-                offer.status
-              )} ms-auto text-capitalize`}
-            >
-              {isFarmerCountered
-                ? "Countered by Me"
-                : isBuyerCountered
-                ? "Countered by Buyer"
-                : offer.status}
-            </span>
           </div>
 
-          <div className="text-muted mb-1">{offer.crop}</div>
+          <div className="text-muted">{offer.crop}</div>
 
           <div className="my-2">
-            <strong>{offer.qty} kg</strong>{" "}
-            <span className="text-muted">Offered:</span>{" "}
-            <span
-              className={
-                offer.priceOffered < (offer.listingPrice ?? Infinity)
-                  ? "text-danger"
-                  : "text-success"
-              }
-            >
-              ₹{offer.priceOffered}/kg
-            </span>{" "}
-            {offer.listingPrice ? (
-              <span className="text-muted">
-                {" "}
-                (Listed: ₹{offer.listingPrice})
-              </span>
-            ) : null}
+            <strong>{offer.qty} kg</strong> — Offered
+            <span className="text-success"> Actual Price ₹{offer.actualQuantity}/kg</span>
           </div>
 
-          <div className="mb-1">
-            <span className="text-muted">Total: </span>
-            <strong>₹{totalValue.toLocaleString()}</strong>
-          </div>
+          {/* <div>
+            Total: <strong>₹{offer.qty * offer.priceOffered}</strong>
+          </div> */}
 
-          {offer.counterPrice && (
-            <div className="text-info small mb-2">
-              Buyer’s Counter: ₹{offer.counterPrice}/kg
-            </div>
+          {/* LAST COUNTER DISPLAY */}
+          {/* CONVERSATION / MESSAGE HISTORY */}
+<div className="bg-light rounded p-2 small mt-2">
+  <strong>Messages:</strong>
+  <div className="mt-1">
+  
+    {/* All counter history */}
+    {offer.counterOffers?.length > 0 ? (
+      offer.counterOffers.map((c, i) => (
+        <div key={i} className="mt-1">
+          {c.counteredBy === "buyer" ? (
+            <span className="text-info">
+              <b>Buyer:</b> Countered ₹{c.price}/kg<br></br>
+              <b>Total:</b> ₹ {offer.qty*c.price}
+            </span>
+          ) : (
+            <span className="text-primary">
+              <b>You:</b> Countered ₹{c.price}/kg
+            </span>
           )}
+        </div>
+      ))
+    ) : (
+      <div className="text-muted mt-1">No counters yet.</div>
+    )}
+  </div>
+</div>
 
-          <div className="small bg-light text-dark rounded p-2 mt-2">
-            <strong>Message:</strong> {offer.message || "—"}
-          </div>
 
-          {/* 🔁 BUTTON / STATUS LOGIC */}
-          <div className="d-flex gap-1 mt-3 flex-wrap">
-            {/* 🟡 If Buyer Countered → Farmer can Accept / Reject / Counter */}
-            {isBuyerCountered ? (
+          <div className="d-flex gap-2 mt-3 flex-wrap">
+
+            {/* PENDING → Accept + Reject only */}
+            {offer.status === "pending" && (
               <>
-                <div className="text-warning small fw-semibold mb-2 w-100">
-                  Buyer countered — awaiting your response
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => handleAccept(offer.id)}
+                >
+                  <Check size={16} /> Accept
+                </Button>
+
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => handleReject(offer.id)}
+                >
+                  <X size={16} /> Reject
+                </Button>
+              </>
+            )}
+
+            {/* COUNTERED → last by buyer → Accept + Reject + Counter */}
+            {isLastByBuyer && (
+              <>
+                <div className="text-warning small w-100">
+                  Buyer countered — respond below.
                 </div>
+
                 <Button
                   variant="success"
                   size="sm"
                   onClick={() => handleAccept(offer.id)}
-                  disabled={actionLoading}
                 >
                   <Check size={16} /> Accept
                 </Button>
+
                 <Button
                   variant="outline-danger"
                   size="sm"
                   onClick={() => handleReject(offer.id)}
-                  disabled={actionLoading}
                 >
                   <X size={16} /> Reject
                 </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => openCounterModal(offer)}
-                  disabled={actionLoading}
-                >
-                  <MessageSquare size={16} /> Counter
-                </Button>
+
+                {/* Counter button visible only inside countered tab */}
+                {activeTab === "counters" && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => openCounterModal(offer)}
+                  >
+                    <MessageSquare size={16} /> Counter
+                  </Button>
+                )}
               </>
-            ) : isFarmerCountered ? (
-              // 🟢 If Farmer Countered → Only show info
+            )}
+
+            {/* COUNTERED → last by farmer → waiting */}
+            {isLastByFarmer && (
               <div className="text-primary small fw-semibold">
-                Countered by you — awaiting buyer’s response
+                You countered — waiting for buyer.
               </div>
-            ) : offer.status === "pending" ? (
-              // 🕓 New Offer — Accept / Reject / Counter
-              <>
-                <Button
-                  variant="success"
-                  size="sm"
-                  onClick={() => handleAccept(offer.id)}
-                  disabled={actionLoading}
-                >
-                  <Check size={16} /> Accept
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => handleReject(offer.id)}
-                  disabled={actionLoading}
-                >
-                  <X size={16} /> Reject
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => openCounterModal(offer)}
-                  disabled={actionLoading}
-                >
-                  <MessageSquare size={16} /> Counter
-                </Button>
-              </>
-            ) : offer.status === "accepted" ? (
-              <div className="text-success small fw-semibold">Accepted</div>
-            ) : offer.status === "rejected" ? (
-              <div className="text-danger small fw-semibold">Rejected</div>
-            ) : null}
+            )}
+
+            {/* DIRECT ACCEPTED / REJECTED */}
+            {offer.status === "accepted" && (
+              <div className="text-success small fw-semibold">Accepted ✔</div>
+            )}
+
+            {offer.status === "rejected" && (
+              <div className="text-danger small fw-semibold">Rejected ❌</div>
+            )}
           </div>
 
-          <div className="mt-2 text-muted small">
-            📞 Buyer Phone: {offer.buyerPhone || "—"}
+          <div className="mt-2 small text-muted">
+            📞 {offer.buyerPhone || "—"}
           </div>
         </Card>
       </div>
@@ -280,7 +270,6 @@ export default function Offers() {
     <div className="container py-4">
       <h2 className="fw-bold text-success mb-4">Offer Management</h2>
 
-      {/* Tabs */}
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
           <button
@@ -292,6 +281,7 @@ export default function Offers() {
             💬 Offers Received
           </button>
         </li>
+
         <li className="nav-item">
           <button
             className={`nav-link ${
@@ -304,23 +294,22 @@ export default function Offers() {
         </li>
       </ul>
 
-      {/* Tab content */}
       {loading ? (
-        <div className="text-center py-5 text-muted">Loading offers...</div>
+        <div className="text-center py-5 text-muted">Loading...</div>
       ) : activeTab === "offers" ? (
         offersReceived.length === 0 ? (
-          <div className="text-center text-muted py-5">No pending offers.</div>
-        ) : (
-          <div className="row g-3">
-            {offersReceived.map((offer) => renderOfferCard(offer))}
+          <div className="text-center text-muted py-5">
+            No pending offers.
           </div>
+        ) : (
+          <div className="row g-3">{offersReceived.map(renderOfferCard)}</div>
         )
       ) : counteredOffers.length === 0 ? (
-        <div className="text-center text-muted py-5">No countered offers.</div>
-      ) : (
-        <div className="row g-3">
-          {counteredOffers.map((offer) => renderOfferCard(offer))}
+        <div className="text-center text-muted py-5">
+          No countered offers.
         </div>
+      ) : (
+        <div className="row g-3">{counteredOffers.map(renderOfferCard)}</div>
       )}
 
       {/* Counter Modal */}

@@ -136,7 +136,9 @@ export default function Listings() {
                     <div className="text-muted small mb-3">
                       <div className="d-flex align-items-center mb-1">
                         <Package size={16} className="me-2" />
-                        {listing.quantity} kg • ₹{listing.pricePerKg}/kg
+                        Available quantity:{listing.quantity} kg 
+                        Actual quantity:{listing.actualquantity}kg
+                         ₹{listing.pricePerKg}/kg
                       </div>
                       <div className="d-flex align-items-center mb-1">
                         <Calendar size={16} className="me-2" /> Added recently

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
-import { Truck, Phone, User, Clock } from "lucide-react";
+import { Truck, Phone, User, Clock, AlertCircle } from "lucide-react"; // Added AlertCircle icon
 
 import {
   getFarmerOrders,
@@ -96,18 +96,18 @@ export default function FarmerOrders() {
   /* ------------------------------------------ */
   /* RECEIPT VIEW */
   /* ------------------------------------------ */
-const handleViewReceipt = async (orderId) => {
-  try {
-    setReceiptLoading(true);
-    const data = await getReceipt(orderId);
-    setReceiptData(data);
-    setShowReceiptModal(true);
-  } catch (err) {
-    alert("Failed to load receipt");
-  } finally {
-    setReceiptLoading(false);
-  }
-};
+  const handleViewReceipt = async (orderId) => {
+    try {
+      setReceiptLoading(true);
+      const data = await getReceipt(orderId);
+      setReceiptData(data);
+      setShowReceiptModal(true);
+    } catch (err) {
+      alert("Failed to load receipt");
+    } finally {
+      setReceiptLoading(false);
+    }
+  };
 
   /* ------------------------------------------ */
   /* STATUS BADGES */
@@ -121,6 +121,8 @@ const handleViewReceipt = async (orderId) => {
     if (s === "in_transit") return { color: "primary", label: "In Transit" };
     if (s === "delivered") return { color: "success", label: "Delivered" };
     if (s === "completed") return { color: "success", label: "Completed ✔" };
+    // 🔴 Added Cancelled Status
+    if (s === "cancelled") return { color: "danger", label: "Cancelled ❌" }; 
     return { color: "secondary", label: "Processing" };
   };
 
@@ -183,36 +185,50 @@ const handleViewReceipt = async (orderId) => {
                     </div>
                   </div>
 
-                  {/* action buttons */}
-                  {order.status === "pending_payment" && (
-                    <div className="alert alert-warning text-center">
-                      Waiting for buyer to pay
+                  {/* 🔴 CANCELLED ALERT (New Addition) */}
+                  {order.status === "cancelled" ? (
+                    <div className="alert alert-danger p-2 mb-3">
+                      <div className="fw-bold d-flex align-items-center mb-1">
+                        <AlertCircle size={16} className="me-2"/> Order Cancelled By Buyer 
+                      </div>
+                      <div className="small text-dark">
+                        Reason: {order.cancellationReason || "No reason provided."}
+                      </div>
                     </div>
-                  )}
-
-                  {order.status !== "pending_payment" && (
-                    <div className="d-flex gap-2">
-                      {order.status === "paid" && (
-                        <Button
-                          variant="success"
-                          className="w-100"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowDriverModal(true);
-                          }}
-                        >
-                          <Truck size={18} /> Assign Drivers
-                        </Button>
+                  ) : (
+                    /* NORMAL ACTION BUTTONS (Only if NOT cancelled) */
+                    <>
+                      {order.status === "pending_payment" && (
+                        <div className="alert alert-warning text-center">
+                          Waiting for buyer to pay
+                        </div>
                       )}
 
-                      <Button
-                        variant="outline-secondary"
-                        className="w-100"
-                        onClick={() => handleViewReceipt(order._id)}
-                      >
-                        🧾 View Receipt
-                      </Button>
-                    </div>
+                      {order.status !== "pending_payment" && (
+                        <div className="d-flex gap-2">
+                          {order.status === "paid" && (
+                            <Button
+                              variant="success"
+                              className="w-100"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowDriverModal(true);
+                              }}
+                            >
+                              <Truck size={18} /> Assign Drivers
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="outline-secondary"
+                            className="w-100"
+                            onClick={() => handleViewReceipt(order._id)}
+                          >
+                            🧾 View Receipt
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="text-end small text-muted mt-2">
@@ -283,10 +299,10 @@ const handleViewReceipt = async (orderId) => {
 
       {/* RECEIPT */}
       <ReceiptModal
-  isOpen={showReceiptModal}
-  onClose={() => setShowReceiptModal(false)}
-  data={receiptData}
-/>
+        isOpen={showReceiptModal}
+        onClose={() => setShowReceiptModal(false)}
+        data={receiptData}
+      />
 
     </div>
   );

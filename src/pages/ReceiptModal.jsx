@@ -26,6 +26,7 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
     buyerPhone,
     paidAt,
     status, // <-- important: add this in BuyerOrders
+    transactionId, // 👈 1. Added transactionId here
   } = data;
 
   // ========= useStates =========
@@ -40,7 +41,7 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
   const grandTotal = subtotal + tax + deliveryFee + platformFee;
 
   /* --------------------------------------------------
-     FETCH DELIVERY FEE
+      FETCH DELIVERY FEE
   ---------------------------------------------------*/
   useEffect(() => {
     if (!farmerId || !buyerId) return;
@@ -61,8 +62,9 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
       .catch((err) => console.error("Delivery Fee Error:", err))
       .finally(() => setLoading(false));
   }, [farmerId, buyerId]);
+
   /* --------------------------------------------------
-     📌 DOWNLOAD PDF BUTTON
+      📌 DOWNLOAD PDF BUTTON
   ---------------------------------------------------*/
   const downloadPDF = () => {
     const button = document.getElementById("download-btn");
@@ -85,25 +87,23 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
   };
 
   /* --------------------------------------------------
-     💳 PAY NOW HANDLER (ONLY FOR pending_payment)
+      💳 PAY NOW HANDLER (ONLY FOR pending_payment)
   ---------------------------------------------------*/
   // Add this helper function at the top of your file (outside component)
-const loadRazorpay = () => {
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
-
-
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   /* --------------------------------------------------
       💳 PAY NOW HANDLER (RAZORPAY INTEGRATED)
   ---------------------------------------------------*/
- const handlePayNow = async () => {
+  const handlePayNow = async () => {
     // 1. Load Script
     const isLoaded = await loadRazorpay();
     if (!isLoaded) {
@@ -127,13 +127,13 @@ const loadRazorpay = () => {
 
       // 3. Open Razorpay Options
       const options = {
-        key: orderData.key_id, 
+        key: orderData.key_id,
         amount: orderData.amount, // Now this will match your grandTotal
         currency: "INR",
         name: "AgriConnect",
         description: `Order #${orderId}`,
-        order_id: orderData.id,// This is the Razorpay Order ID
-        
+        order_id: orderData.id, // This is the Razorpay Order ID
+
         // HANDLER: This runs ONLY when payment is successful on Razorpay
         handler: async function (response) {
           try {
@@ -174,23 +174,9 @@ const loadRazorpay = () => {
       alert("Something went wrong initiating payment.");
     }
   };
-  // const handlePayNow = async () => {
-  //   if (!window.confirm("Proceed with payment?")) return;
-
-  //   try {
-  //     console.log("payment entered")
-  //     await payForOrder(orderId);
-  //     alert("Payment Successful!");
-
-  //     onClose();
-  //     if (refresh) refresh(); // reload UI
-  //   } catch (err) {
-  //     alert("Payment failed");
-  //   }
-  // };
 
   /* --------------------------------------------------
-     UI
+      UI
   ---------------------------------------------------*/
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Receipt" size="lg">
@@ -225,7 +211,14 @@ const loadRazorpay = () => {
         <div className="mt-3">
           <strong>Order No:</strong> {orderId} <br />
           <strong>Date:</strong> {paidAt ? new Date(paidAt).toLocaleDateString() : "--"} <br />
-          <strong>Crop:</strong> {crop}
+          <strong>Crop:</strong> {crop} <br />
+          
+          {/* 👈 2. Display Transaction ID (Only if paid) */}
+          {status !== "pending_payment" && (
+             <>
+               <strong>Transaction ID:</strong> <span style={{fontFamily: 'monospace'}}>{transactionId || "N/A"}</span>
+             </>
+          )}
         </div>
 
         {/* TABLE */}
@@ -267,7 +260,7 @@ const loadRazorpay = () => {
         </div>
 
         {/* --------------------------------------------------
-              IF PENDING PAYMENT → SHOW PAY NOW BUTTON
+             IF PENDING PAYMENT → SHOW PAY NOW BUTTON
         --------------------------------------------------- */}
         {status === "pending_payment" && (
           <button
@@ -279,7 +272,7 @@ const loadRazorpay = () => {
         )}
 
         {/* --------------------------------------------------
-              IF PAID OR HIGHER → SHOW DOWNLOAD INVOICE
+             IF PAID OR HIGHER → SHOW DOWNLOAD INVOICE
         --------------------------------------------------- */}
         {status !== "pending_payment" && (
           <button

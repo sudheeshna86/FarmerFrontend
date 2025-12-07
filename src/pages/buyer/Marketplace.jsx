@@ -56,11 +56,7 @@ const handleSubmitOffer = async () => {
   try {
     //  console.log("🚀 offerType =", offerType);
     if (offerType === "counter") {
-  console.log("🛰 Sending Counter Offer:", {
-    listingId: selectedListing._id,
-    counterOfferPrice: offeredPrice,
-    quantity,
-  });
+  console.log("🛰 Sending Counter Offer:");
 
   await buyerCounterOffer({
     listingId: selectedListing._id,
