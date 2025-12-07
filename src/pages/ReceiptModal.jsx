@@ -87,20 +87,107 @@ export default function ReceiptModal({ isOpen, onClose, data, refresh }) {
   /* --------------------------------------------------
      💳 PAY NOW HANDLER (ONLY FOR pending_payment)
   ---------------------------------------------------*/
-  const handlePayNow = async () => {
-    if (!window.confirm("Proceed with payment?")) return;
+  // Add this helper function at the top of your file (outside component)
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
+
+
+  /* --------------------------------------------------
+      💳 PAY NOW HANDLER (RAZORPAY INTEGRATED)
+  ---------------------------------------------------*/
+ const handlePayNow = async () => {
+    // 1. Load Script
+    const isLoaded = await loadRazorpay();
+    if (!isLoaded) {
+      alert("Razorpay SDK failed to load. Check internet connection.");
+      return;
+    }
 
     try {
-      console.log("payment entered")
-      await payForOrder(orderId);
-      alert("Payment Successful!");
+      // 2. Call Backend to Create Order
+      // 👇 WE ARE SENDING 'grandTotal' HERE
+      const { data: orderData } = await apiClient.post("/payments/create-order", {
+        orderId: orderId,
+        amount: grandTotal, // <--- Sending the calculated total
+        deliveryFee: deliveryFee // <--- Sending delivery fee to save it too
+      });
 
-      onClose();
-      if (refresh) refresh(); // reload UI
+      if (!orderData.success) {
+        alert("Server error creating order");
+        return;
+      }
+
+      // 3. Open Razorpay Options
+      const options = {
+        key: orderData.key_id, 
+        amount: orderData.amount, // Now this will match your grandTotal
+        currency: "INR",
+        name: "AgriConnect",
+        description: `Order #${orderId}`,
+        order_id: orderData.id,// This is the Razorpay Order ID
+        
+        // HANDLER: This runs ONLY when payment is successful on Razorpay
+        handler: async function (response) {
+          try {
+            // 4. Verify Payment on Backend
+            const verifyRes = await apiClient.post("/payments/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: orderId, // Send original Order ID so backend knows what to update
+            });
+
+            if (verifyRes.data.success) {
+              alert("Payment Successful! ✅");
+              onClose(); // Close modal
+              if (refresh) refresh(); // Refresh UI to show "paid" status
+            } else {
+              alert("Payment Verification Failed ❌");
+            }
+          } catch (error) {
+            console.error(error);
+            alert("Payment failed during verification.");
+          }
+        },
+        prefill: {
+          name: buyerName,    // Auto-fill buyer details
+          contact: buyerPhone,
+        },
+        theme: {
+          color: "#084a70",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
     } catch (err) {
-      alert("Payment failed");
+      console.error("Payment Error:", err);
+      alert("Something went wrong initiating payment.");
     }
   };
+  // const handlePayNow = async () => {
+  //   if (!window.confirm("Proceed with payment?")) return;
+
+  //   try {
+  //     console.log("payment entered")
+  //     await payForOrder(orderId);
+  //     alert("Payment Successful!");
+
+  //     onClose();
+  //     if (refresh) refresh(); // reload UI
+  //   } catch (err) {
+  //     alert("Payment failed");
+  //   }
+  // };
 
   /* --------------------------------------------------
      UI
