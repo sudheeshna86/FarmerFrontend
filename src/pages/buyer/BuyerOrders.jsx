@@ -8,8 +8,8 @@ import {
   Check,
   X,
   MessageSquare,
-  Trash2, // Import Trash Icon
-  AlertCircle // Import Alert Icon
+  Trash2, // 🆕 Added Trash Icon
+  AlertCircle, // 🆕 Added Alert Icon
 } from "lucide-react";
 import {
   getMyOrders,
@@ -23,7 +23,7 @@ import {
   deleteOffer,
   buyerCounterOffer,
 } from "../../api/BuyerOffers";
-// Import your API client to make the cancel call
+// 🆕 Import API Client for the cancel request
 import apiClient from "../../api/apiClient"; 
 import "bootstrap/dist/css/bootstrap.min.css";
 import ReceiptModal from "../ReceiptModal";
@@ -244,12 +244,139 @@ export default function BuyerOrders() {
       ) : activeTab === "offers" ? (
         /* ... OFFERS TAB CONTENT (UNCHANGED) ... */
         <div className="row g-4">
-            {/* (Your existing offer map code here - kept hidden for brevity as requested only changes for order) */}
             {offers.length === 0 && <div className="text-center text-muted py-5">No offers yet</div>}
             {offers.map((offer) => {
-                 /* ... Existing Offer Card logic ... */
-                 // Just rendering a placeholder to keep context
-                 return <div key={offer._id} className="col-md-6 col-lg-4"><div className="card p-3">Offer for {offer.listing?.cropName}</div></div>
+              const last = offer.counterOffers?.[offer.counterOffers.length - 1];
+
+              return (
+                <div className="col-md-6 col-lg-4" key={offer._id}>
+                  <div className="card shadow-sm border-0 h-100">
+                    <img
+                      src={
+                        offer.listing?.imageUrl
+                          ? offer.listing.imageUrl.startsWith("http")
+                            ? offer.listing.imageUrl
+                            : `http://localhost:5000${offer.listing.imageUrl}`
+                          : "https://via.placeholder.com/400"
+                      }
+                      alt={offer.listing?.cropName || "Crop"}
+                      className="card-img-top"
+                      style={{ height: "180px", objectFit: "cover" }}
+                    />
+
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <h5 className="fw-bold text-dark mb-0">
+                          {offer.listing?.cropName}
+                        </h5>
+                        {getStatusBadge(offer)}
+                      </div>
+
+                      <p className="fw-semibold text-success mb-2">
+                        Listed: ₹{offer.listing.pricePerKg}/kg <br />
+                        You Offered: ₹{offer.offeredPrice}/kg • {offer.quantity} kg
+                      </p>
+
+                      <div className="bg-light rounded p-2 small mt-2">
+                        <strong>Messages:</strong>
+                        <div className="mt-1">
+                          {offer.counterOffers?.length > 0 ? (
+                            offer.counterOffers.map((c, i) => (
+                              <div key={i} className="mt-1">
+                                {c.counteredBy === "buyer" ? (
+                                  <span className="text-info">
+                                    <b>You:</b> Countered ₹{c.price}/kg <br />
+                                    <b>Total:</b> ₹{offer.quantity * c.price}
+                                  </span>
+                                ) : (
+                                  <span className="text-primary">
+                                    <b>Farmer:</b> Countered ₹{c.price}/kg <br />
+                                    <b>Total:</b> ₹{offer.quantity * c.price}
+                                  </span>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted mt-1">No conversation yet.</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* BUTTON LOGIC */}
+                      {offer.status === "pending" && (
+                        <button
+                          className="btn btn-sm btn-outline-danger w-100 mt-2"
+                          onClick={() => handleRemove(offer._id)}
+                        >
+                          Remove
+                        </button>
+                      )}
+
+                      {offer.status === "countered" &&
+                        last &&
+                        last.counteredBy === "farmer" && (
+                          <div className="d-flex gap-2 mt-2">
+                            <button
+                              className="btn btn-sm btn-success flex-fill px-1"
+                              onClick={() => handleAcceptCounter(offer._id)}
+                              title="Accept"
+                            >
+                              <Check size={14} className="me-1" /> Accept
+                            </button>
+
+                            <button
+                              className="btn btn-sm btn-outline-danger flex-fill px-1"
+                              onClick={() => handleRejectCounter(offer._id)}
+                              title="Reject"
+                            >
+                              <X size={14} className="me-1" /> Reject
+                            </button>
+
+                            <button
+                              className="btn btn-sm btn-primary flex-fill px-1"
+                              onClick={() => openBuyerCounterModal(offer)}
+                              title="Counter"
+                            >
+                              <MessageSquare size={14} className="me-1" /> Counter
+                            </button>
+                          </div>
+                        )}
+
+                      {offer.status === "countered" &&
+                        last &&
+                        last.counteredBy === "buyer" && (
+                          <div className="alert alert-info small mt-2">
+                            You countered — waiting for farmer.
+                          </div>
+                        )}
+
+                      {offer.status === "rejected" && (
+                        <button
+                          className="btn btn-sm btn-outline-danger w-100 mt-2"
+                          onClick={() => handleRemove(offer._id)}
+                        >
+                          Remove
+                        </button>
+                      )}
+
+                      <hr className="my-2" />
+
+                      <div className="text-muted small d-flex align-items-center">
+                        <User size={14} className="me-2 text-success" />
+                        Farmer: {offer.listing?.farmer?.name || "N/A"}
+                      </div>
+                      <div className="text-muted small d-flex align-items-center">
+                        <Phone size={14} className="me-2 text-success" />
+                        {offer.listing?.farmer?.phone || "N/A"}
+                      </div>
+                      <div className="text-muted small mt-2">
+                        <Clock size={14} className="me-1" />
+                        {new Date(offer.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
             })}
         </div>
       ) : (
@@ -318,7 +445,19 @@ export default function BuyerOrders() {
                     )}
 
                     <hr className="my-2" />
-                    {/* ... (Existing footer info) ... */}
+                    
+                    <div className="text-muted small d-flex align-items-center">
+                      <User size={14} className="me-2 text-success" />
+                      Farmer: {order.farmer?.name || "N/A"}
+                    </div>
+                    <div className="text-muted small d-flex align-items-center">
+                      <Phone size={14} className="me-2 text-success" />
+                      {order.farmer?.phone || "N/A"}
+                    </div>
+                    <div className="text-muted small mt-2 d-flex align-items-center">
+                      <MapPin size={14} className="me-2 text-success" />
+                      {order.listing?.location || "N/A"}
+                    </div>
                     <div className="text-muted small mt-2">
                       <Clock size={14} className="me-1" />
                       {new Date(order.createdAt).toLocaleString()}
@@ -331,7 +470,82 @@ export default function BuyerOrders() {
         </div>
       )}
 
-      {/* ... (Buyer Counter Modal - UNCHANGED) ... */}
+      {/* Buyer Counter Modal */}
+      <Modal
+        isOpen={showCounterModal}
+        onClose={() => setShowCounterModal(false)}
+        title="Send Counter Offer"
+      >
+        {selectedOffer && (
+          <form onSubmit={submitBuyerCounter} className="p-1">
+            <div className="p-3 mb-3 rounded-2" style={{ backgroundColor: "#f8f9fa" }}>
+              <h4 className="fw-bold mb-2 text-dark">{selectedOffer.listing?.cropName}</h4>
+              <div className="small mb-1 text-secondary">
+                <span className="fw-bold text-dark">Farmer Price:</span> ₹{selectedOffer.listing.pricePerKg}/kg
+              </div>
+              <div className="small text-secondary">
+                <span className="fw-bold text-dark">Your Quantity:</span> {selectedOffer.quantity} kg
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label text-muted small fw-semibold">
+                Counter Price (₹ per kg)
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                value={counterPrice}
+                onChange={(e) => setCounterPrice(e.target.value)}
+                required
+                style={{ height: "45px", borderRadius: "6px" }}
+              />
+            </div>
+
+            <div
+              className="d-flex align-items-center p-3 mb-4 rounded-2"
+              style={{ backgroundColor: "#d1fae5", color: "#065f46" }}
+            >
+              <span className="fw-bold me-1">Total:</span>
+              <span className="fw-bold">
+                ₹
+                {counterPrice && !isNaN(counterPrice)
+                  ? (Number(counterPrice) * selectedOffer.quantity).toLocaleString()
+                  : "0"}
+              </span>
+            </div>
+
+            <div className="d-flex gap-2">
+              <button
+                type="button"
+                className="btn w-50 fw-semibold"
+                style={{
+                  backgroundColor: "white",
+                  border: "1px solid #ced4da",
+                  color: "black",
+                  height: "45px",
+                }}
+                onClick={() => setShowCounterModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                className="btn w-50 fw-semibold text-white"
+                style={{
+                  backgroundColor: "#198754",
+                  border: "none",
+                  height: "45px",
+                }}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Sending..." : "Send Counter Offer"}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       {/* 🆕 CANCEL ORDER MODAL */}
       <Modal
