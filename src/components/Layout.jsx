@@ -39,7 +39,6 @@ export default function Layout({ children }) {
       return [
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         { icon: Package, label: "Listings", to: "/listings" },
-        { icon: Heart, label: "Donations", to: "/donations" },
         { icon: TrendingUp, label: "AI Insights", to: "/insights" },
         { icon: DollarSign, label: "Earnings", to: "/earnings" },
         { icon: ShoppingCart, label: "Orders", to: "/orders" },
