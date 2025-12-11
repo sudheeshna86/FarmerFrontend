@@ -156,7 +156,7 @@ export default function FarmerDashboard() {
                                 {recentOrders.map((order) => (
                                     <tr key={order._id}>
                                         <td className="ps-4 fw-bold text-primary">
-                                            {order._id}
+                                            #{String(order.id || order._id).slice(-6).toUpperCase()}
                                         </td>
                                         <td>
                                             <span className="fw-semibold">

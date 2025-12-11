@@ -40,9 +40,9 @@ export default function Layout({ children }) {
         { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
         { icon: Package, label: "Listings", to: "/listings" },
         { icon: TrendingUp, label: "AI Insights", to: "/insights" },
-        { icon: DollarSign, label: "Earnings", to: "/earnings" },
+        
         { icon: ShoppingCart, label: "Orders", to: "/orders" },
-        { icon: Package, label: "Deliveries", to: "/deliveries" },
+     
         { icon: BookOpen, label: "Learning", to: "/learning" },
         { icon: MessageSquare, label: "Messages", to: "/messages" },
         { icon: User, label: "Profile", to: "/profile" },

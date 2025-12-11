@@ -1,144 +1,286 @@
-import React from 'react';
-import { Package, Heart, DollarSign, TrendingUp, Search, CheckCircle, ShoppingCart } from 'lucide-react';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
+import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { 
+  ShoppingBag, 
+  Clock, 
+  CheckCircle, 
+  CreditCard, 
+  Truck, 
+  Search, 
+  ChevronRight,
+  AlertCircle
+} from "lucide-react";
+
+// ✅ Import the API function we created
+import {getBuyerDashboardData} from "../../api/BuyerList";
 
 export default function BuyerDashboard() {
-  const kpis = [
-    { label: 'Orders in Progress', value: 6, icon: Package, color: 'text-primary', bg: 'bg-light' },
-    { label: 'Saved Suppliers', value: 14, icon: Heart, color: 'text-danger', bg: 'bg-light' },
-    { label: 'Monthly Spend', value: '₹1.2L', icon: DollarSign, color: 'text-success', bg: 'bg-light' },
-    { label: 'Savings This Month', value: '18%', icon: TrendingUp, color: 'text-warning', bg: 'bg-light' },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const savedSuppliers = [
-    { id: 1, name: 'Green Valley Farms', location: 'Karnataka', rating: 4.8, verified: true, specialties: ['Organic Vegetables', 'Leafy Greens'], lastOrder: '3 days ago' },
-    { id: 2, name: 'Sunrise Agriculture', location: 'Maharashtra', rating: 4.9, verified: true, specialties: ['Fruits', 'Seasonal Produce'], lastOrder: '1 week ago' },
-    { id: 3, name: 'Fresh Fields Co-op', location: 'Punjab', rating: 4.7, verified: true, specialties: ['Grains', 'Pulses'], lastOrder: '2 weeks ago' },
-  ];
+  // State matching your backend response structure
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    ongoingOrders: 0,
+    totalSpend: 0,
+    savedSuppliers: 0
+  });
+  const [ongoingOrders, setOngoingOrders] = useState([]);
+  const [recentHistory, setRecentHistory] = useState([]);
 
-  const recommendedSuppliers = [
-    { id: 4, name: 'Organic Earth Farmers', location: 'Tamil Nadu', rating: 4.9, verified: true, match: 95, reason: 'Specializes in products you frequently order' },
-    { id: 5, name: 'Highland Produce', location: 'Himachal Pradesh', rating: 4.6, verified: true, match: 88, reason: 'Offers competitive pricing on seasonal items' },
-  ];
+  // --- 1. FETCH DATA ON MOUNT ---
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const data = await getBuyerDashboardData();
+        
+        // Debug: Check console to ensure data structure matches
+        console.log("Buyer API Response:", data);
 
-  const recentOrders = [
-    { id: 1, item: 'Organic Tomatoes', supplier: 'Green Valley Farms', status: 'in_transit', date: 'Oct 22' },
-    { id: 2, item: 'Fresh Carrots', supplier: 'Sunrise Agriculture', status: 'delivered', date: 'Oct 20' },
-    { id: 3, item: 'Potatoes', supplier: 'Green Valley Farms', status: 'processing', date: 'Oct 21' },
-  ];
+        setStats(data.stats);
+        setOngoingOrders(data.ongoingOrders);
+        setRecentHistory(data.recentHistory);
+      } catch (err) {
+        setError("Failed to load dashboard data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  // --- 2. STATUS BADGE HELPER ---
+  // Maps your specific DB statuses to Bootstrap colors
+  const getStatusBadge = (status) => {
+    const s = status ? status.toLowerCase() : "";
+    
+    // Green: Success/Done
+    if (["delivered", "completed", "paid", "otp_verified"].includes(s)) 
+      return "bg-success";
+    
+    // Blue: Moving/Active
+    if (["in_transit", "driver_assigned"].includes(s)) 
+      return "bg-info text-dark";
+    
+    // Yellow: Waiting/Pending
+    if (["pending_payment", "awaiting_driver_accept", "pending"].includes(s)) 
+      return "bg-warning text-dark";
+    
+    // Red: Failed
+    if (["cancelled", "failed", "rejected"].includes(s)) 
+      return "bg-danger";
+      
+    return "bg-secondary";
+  };
+
+  // --- 3. STATUS TEXT FORMATTER ---
+  // Turns "pending_payment" into "Pending Payment"
+  const formatStatus = (status) => {
+    if (!status) return "";
+    return status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  if (loading) return (
+    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+      <div className="spinner-border text-primary" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="container py-5 text-center">
+      <div className="alert alert-danger d-inline-flex align-items-center gap-2">
+        <AlertCircle size={20} /> {error}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="container my-5">
-      <div className="mb-4">
-        <h1 className="fw-bold fs-3 text-dark">Welcome, John Doe!</h1>
-        <p className="text-muted">Manage your procurement and discover quality suppliers</p>
-      </div>
-      <div className="row g-4 mb-4">
-        {kpis.map((kpi, i) => (
-          <div className="col-md-6 col-lg-3" key={i}>
-            <Card hover>
-              <div className="p-4">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className={`d-flex align-items-center justify-content-center rounded-3 ${kpi.bg}`} style={{ width: '50px', height: '50px' }}>
-                    <kpi.icon className={kpi.color} size={24} />
-                  </div>
-                  <h3 className="fw-bold">{kpi.value}</h3>
-                </div>
-                <p className="text-secondary small mb-0">{kpi.label}</p>
-              </div>
-            </Card>
+    <div className="container-fluid bg-light min-vh-100 py-4">
+      <div className="container">
+        
+        {/* === HEADER === */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2 className="fw-bold text-dark mb-1">Buyer Overview</h2>
+            <p className="text-muted mb-0">Track your orders and procurement activity.</p>
           </div>
-        ))}
-      </div>
-      <Card className="mb-4">
-        <div className="p-4 d-flex align-items-center gap-3">
-          <Search className="text-muted" size={22} />
-          <input type="text" placeholder="Search for produce, suppliers, or locations..." className="form-control flex-grow-1" />
-          <Button>Search</Button>
+          <button className="btn btn-primary d-flex align-items-center gap-2">
+            <Search size={18} /> Browse Marketplace
+          </button>
         </div>
-      </Card>
-      <div className="row g-4 mb-4">
-        <div className="col-lg-6">
-          <Card>
-            <div className="p-4">
-              <h4 className="fw-bold mb-3">Recommended Suppliers</h4>
-              {recommendedSuppliers.map((s) => (
-                <div key={s.id} className="p-3 mb-3 bg-light border rounded">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h5 className="mb-0 fw-bold">{s.name}</h5>
-                      <small className="text-muted">{s.location}</small>
-                    </div>
-                    <Badge variant="success">{s.match}% match</Badge>
-                  </div>
-                  <p className="text-success small mb-2">{s.reason}</p>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <span className="text-warning fw-semibold">★ {s.rating}</span>
-                      {s.verified && <Badge variant="info" size="sm">Verified</Badge>}
-                    </div>
-                    <Button size="sm" variant="outline">View Profile</Button>
-                  </div>
+
+        {/* === STATS CARDS === */}
+        <div className="row g-3 mb-4">
+          {/* Card 1: Total Orders */}
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body d-flex align-items-center">
+                <div className="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                  <ShoppingBag className="text-primary" size={24} />
                 </div>
-              ))}
+                <div>
+                  <p className="text-muted small mb-0 text-uppercase fw-bold">Total Orders</p>
+                  <h3 className="fw-bold mb-0">{stats.totalOrders}</h3>
+                </div>
+              </div>
             </div>
-          </Card>
+          </div>
+
+          {/* Card 2: Ongoing Orders */}
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm h-100" style={{borderBottom: "4px solid #ffc107"}}>
+              <div className="card-body d-flex align-items-center">
+                <div className="bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                  <Truck className="text-warning" size={24} />
+                </div>
+                <div>
+                  <p className="text-muted small mb-0 text-uppercase fw-bold">Ongoing Orders</p>
+                  <h3 className="fw-bold mb-0">{stats.ongoingOrders}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Total Spend */}
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body d-flex align-items-center">
+                <div className="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                  <CreditCard className="text-success" size={24} />
+                </div>
+                <div>
+                  <p className="text-muted small mb-0 text-uppercase fw-bold">Total Spend</p>
+                  <h3 className="fw-bold mb-0">₹{stats.totalSpend.toLocaleString('en-IN')}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Saved Suppliers */}
+          <div className="col-md-3">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body d-flex align-items-center">
+                <div className="bg-danger bg-opacity-10 p-3 rounded-circle me-3">
+                  <CheckCircle className="text-danger" size={24} />
+                </div>
+                <div>
+                  <p className="text-muted small mb-0 text-uppercase fw-bold">Active Farmers</p>
+                  <h3 className="fw-bold mb-0">{stats.savedSuppliers}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="col-lg-6">
-          <Card>
-            <div className="p-4">
-              <h4 className="fw-bold mb-3">Saved Suppliers</h4>
-              {savedSuppliers.map((s) => (
-                <div key={s.id} className="p-3 mb-3 border rounded">
-                  <div className="d-flex justify-content-between mb-2">
-                    <div>
-                      <h5 className="fw-bold mb-0">{s.name}</h5>
-                      <small className="text-muted">{s.location}</small>
-                    </div>
-                    <span className="text-warning fw-semibold">★ {s.rating}</span>
-                  </div>
-                  <div className="mb-2">
-                    {s.specialties.map((spec, idx) => (
-                      <Badge key={idx} size="sm" className="me-1">{spec}</Badge>
+
+        {/* === SECTION 1: ONGOING ORDERS === */}
+        <div className="card border-0 shadow-sm mb-4">
+          <div className="card-header bg-white py-3">
+            <h5 className="mb-0 fw-bold d-flex align-items-center text-warning">
+              <Clock className="me-2" size={20}/> Ongoing Orders
+            </h5>
+          </div>
+          <div className="card-body p-0">
+            {ongoingOrders.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="bg-light">
+                    <tr>
+                      <th className="ps-4">Order ID</th>
+                      <th>Product</th>
+                      <th>Farmer</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ongoingOrders.map(order => (
+                      <tr key={order.id}>
+                        <td className="ps-4 fw-bold text-primary">#{String(order.id).slice(-6).toUpperCase()}</td>
+                        <td>
+                          <div className="d-flex align-items-center gap-2">
+                             {/* Optional: Add Image here if available */}
+                            <span className="fw-semibold">{order.product}</span>
+                          </div>
+                        </td>
+                        <td>{order.farmer}</td>
+                        <td>
+                          <span className={`badge rounded-pill ${getStatusBadge(order.status)} px-3 py-2`}>
+                            {formatStatus(order.status)}
+                          </span>
+                        </td>
+                        <td className="text-muted small">
+                          {new Date(order.date).toLocaleDateString()}
+                        </td>
+                        <td className="fw-bold">₹{order.amount.toLocaleString('en-IN')}</td>
+                      </tr>
                     ))}
-                  </div>
-                  <div className="d-flex justify-content-between small text-muted">
-                    <span>Last order: {s.lastOrder}</span>
-                    <Button size="sm" variant="outline">View Listings</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-5 text-center text-muted">
+                <p className="mb-0">No active orders right now.</p>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* === SECTION 2: RECENT HISTORY === */}
+        <div className="card border-0 shadow-sm">
+          <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 className="mb-0 fw-bold d-flex align-items-center text-secondary">
+              <ShoppingBag className="me-2" size={20}/> Recent History
+            </h5>
+            <button className="btn btn-sm btn-link text-decoration-none">View All</button>
+          </div>
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-striped align-middle mb-0">
+                <thead className="bg-light">
+                  <tr>
+                    <th className="ps-4">Order ID</th>
+                    <th>Product</th>
+                    <th>Farmer</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentHistory.map(order => (
+                    <tr key={order.id}>
+                      <td className="ps-4 text-muted">#{String(order.id).slice(-6).toUpperCase()}</td>
+                      <td>{order.product}</td>
+                      <td>{order.farmer}</td>
+                      <td className="text-muted small">{new Date(order.date).toLocaleDateString()}</td>
+                      <td>
+                        <span className={`badge rounded-pill ${getStatusBadge(order.status)} px-2`}>
+                          {formatStatus(order.status)}
+                        </span>
+                      </td>
+                      <td>₹{order.amount.toLocaleString('en-IN')}</td>
+                      <td className="text-end pe-3">
+                        <button className="btn btn-sm btn-light text-muted">
+                          <ChevronRight size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {recentHistory.length === 0 && (
+                      <tr><td colSpan="7" className="text-center py-4 text-muted">No past order history found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <Card>
-        <div className="p-4">
-          <h4 className="fw-bold mb-3">Recent Orders</h4>
-          {recentOrders.map((order) => (
-            <div key={order.id} className="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <div>
-                <strong>{order.item}</strong>
-                <div className="small text-muted">{order.supplier} • {order.date}</div>
-              </div>
-              <div className="d-flex align-items-center gap-2">
-                <Badge
-                  variant={
-                    order.status === 'delivered' ? 'success' :
-                    order.status === 'in_transit' ? 'info' :
-                    'warning'
-                  }
-                >
-                  {order.status.replace('_', ' ')}
-                </Badge>
-                <Button size="sm" variant="outline">Track</Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
