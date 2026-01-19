@@ -2,11 +2,13 @@
 
 A production-ready full-stack MERN application that enables direct agricultural trade between farmers and buyers, eliminating middlemen and ensuring fair pricing, secure payments, and transparent order fulfillment.
 
-🔗 Live: https://farmer-frontend-theta.vercel.app/
+🔗 Project Links
 
-🔗 Frontend: https://github.com/sudheeshna86/FarmerFrontend.git
+Live Demo: https://farmer-frontend-theta.vercel.app/
 
-🔗 Backend: https://github.com/sudheeshna86/FarmerBackend.git
+Frontend Repository: https://github.com/sudheeshna86/FarmerFrontend.git
+
+Backend Repository: https://github.com/sudheeshna86/FarmerBackend.git
 
 🚀 Why This Project Matters
 
@@ -16,54 +18,53 @@ Handles the entire trade lifecycle from listing to delivery
 
 Demonstrates end-to-end product ownership, not just isolated features
 
-Flow:
+End-to-End Flow:
 Crop Listing → Negotiation → Order Creation → Payment → Delivery → Invoice
 
 💼 Key Engineering Highlights
 
-Full-Stack MERN Architecture with clean REST APIs
+Full-Stack MERN architecture with clean REST APIs
 
-Role-Based Access Control for Farmer, Buyer, and Driver
+Role-based access control for Farmer, Buyer, and Driver
 
-Secure Authentication using JWT and bcrypt
+Secure authentication using JWT and bcrypt
 
-Razorpay Payment Integration with signature verification
+Razorpay payment integration with signature verification
 
-Automated Order & Invoice Generation (PDF)
+Automated order & invoice generation (PDF)
 
-Distance-Based Delivery Fee Calculation using Google Maps API
+Distance-based delivery fee calculation using Google Maps API
 
-Scalable MongoDB Schema Design for users, listings, offers, and orders
+Scalable MongoDB schema design for users, listings, offers, and orders
 
 🧠 Technical Skills Demonstrated
+🎨 Frontend
 
-Frontend
-
-React (Hooks, Component-based architecture)
+React (Hooks, component-based architecture)
 
 Axios for API integration
 
 Bootstrap & custom CSS
 
-HTML2PDF for invoices
+HTML2PDF for invoice generation
 
-Backend
+⚙️ Backend
 
 Node.js & Express.js
 
 RESTful API design
 
-JWT authentication & role authorization
+JWT authentication & role-based authorization
 
 Razorpay payment workflows
 
-Database
+🗄️ Database
 
 MongoDB with Mongoose
 
-Relational data modeling
+Relational-style data modeling
 
-Tools & Practices
+🛠️ Tools & Practices
 
 Git & GitHub (version control)
 
@@ -71,22 +72,41 @@ Postman (API testing)
 
 Environment-based configuration
 
-Modular, maintainable backend structure
+Modular & maintainable backend structure
 
 👥 Multi-Role System
 
-Farmer: Manage crop listings, negotiate prices, confirm orders
+👨‍🌾 Farmer
 
-Buyer: Browse crops, negotiate, make payments
+Manage crop listings
 
-Driver: Track and update delivery status
+Negotiate prices
+
+Confirm orders
+
+🛒 Buyer
+
+Browse crop listings
+
+Negotiate offers
+
+Complete secure payments
+
+🚚 Driver
+
+View assigned deliveries
+
+Update delivery status
 
 📌 Recruiter Summary (TL;DR)
 
 ✔ Built a complete marketplace product from scratch
+
 ✔ Implemented secure payments & role-based workflows
-✔ Worked with real APIs and production-style architecture
-✔ Demonstrates strong full-stack, backend, and system design skills
+
+✔ Integrated real-world APIs (Razorpay, Google Maps)
+
+✔ Demonstrates strong full-stack, backend & system design skills
 
 👩‍💻 Author
 
