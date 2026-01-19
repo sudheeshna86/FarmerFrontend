@@ -85,7 +85,7 @@ A **production-ready full-stack MERN application** that enables **direct agricul
 
 ---
 
-## 📌 Recruiter Summary (TL;DR)
+## 📌 Summary
 
 - ✔ Built a **complete marketplace product from scratch**
 - ✔ Implemented **secure payments & role-based workflows**
