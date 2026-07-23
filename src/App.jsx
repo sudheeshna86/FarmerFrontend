@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { SocketProvider } from './contexts/SocketContext';
+import { ChatProvider } from './contexts/ChatContext';
 import Layout from './components/Layout';
 
 // Public Pages
@@ -35,6 +37,7 @@ import NGODashboard from './pages/ngo/NGODashboard';
 // Shared
 import LearningHub from './pages/shared/LearningHub';
 import Messages from './pages/shared/Messages';
+import ChatPage from './pages/shared/ChatPage';
 import Sustainability from './pages/shared/Sustainability';
 
 function AppRoutes() {
@@ -93,6 +96,7 @@ function AppRoutes() {
       {/* Shared */}
       <Route path="/learning" element={withLayoutIfAuth(<LearningHub />)} />
       <Route path="/messages" element={withLayoutIfAuth(<Messages />)} />
+      <Route path="/chat" element={withLayoutIfAuth(<ChatPage />)} />
       <Route path="/sustainability" element={withLayoutIfAuth(<Sustainability />)} />
 
       {/* DRIVER — only 3 pages */}
@@ -126,9 +130,13 @@ export default function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <SocketProvider>
+          <ChatProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </ChatProvider>
+        </SocketProvider>
       </LanguageProvider>
     </AuthProvider>
   );

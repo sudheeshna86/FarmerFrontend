@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useChat } from "../../contexts/ChatContext";
 import { Card } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
@@ -32,6 +33,7 @@ export default function FarmerOrders() {
   const [receiptLoading, setReceiptLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const { openChatWithUser, setIsOpen } = useChat();
 
   /* ------------------------------------------ */
   /* FETCH FARMER ORDERS */
@@ -274,6 +276,17 @@ export default function FarmerOrders() {
                             onClick={() => handleViewReceipt(order._id)}
                           >
                             🧾 View Receipt
+                          </Button>
+
+                          <Button
+                            variant="outline-success"
+                            className="w-100"
+                            onClick={async () => {
+                              setIsOpen(true);
+                              await openChatWithUser(order.buyer, "buyer");
+                            }}
+                          >
+                            💬 Chat
                           </Button>
                         </div>
                       )}

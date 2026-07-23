@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useChat } from "../../contexts/ChatContext";
 import {
   MapPin,
   Clock,
@@ -32,6 +33,7 @@ export default function Offers() {
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [counterPrice, setCounterPrice] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const { openChatWithUser, setIsOpen } = useChat();
 
   useEffect(() => {
     fetchOffers(page, statusFilter);
@@ -236,6 +238,17 @@ export default function Offers() {
                   onClick={() => handleReject(offer.id)}
                 >
                   <X size={16} /> Reject
+                </Button>
+
+                <Button
+                  variant="outline-success"
+                  size="sm"
+                  onClick={async () => {
+                    setIsOpen(true);
+                    await openChatWithUser(offer.raw?.buyer, "buyer");
+                  }}
+                >
+                  <MessageSquare size={16} /> Chat
                 </Button>
 
                 {/* Counter button visible only inside countered tab */}

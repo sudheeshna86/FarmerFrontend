@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import ChatWidget from "./ChatWidget";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function Layout({ children }) {
@@ -207,6 +208,8 @@ if (user.role === "driver") {
       >
         <div className="p-4">{children}</div>
       </div>
+
+      {user && <ChatWidget />}
     </div>
   );
 }

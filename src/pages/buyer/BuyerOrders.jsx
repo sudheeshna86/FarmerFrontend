@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useChat } from "../../contexts/ChatContext";
 import {
   MapPin,
   Clock,
@@ -51,6 +52,7 @@ export default function BuyerOrders() {
   const [orderToCancel, setOrderToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const { openChatWithUser, setIsOpen } = useChat();
 
   useEffect(() => {
     fetchAllData();
@@ -340,6 +342,10 @@ export default function BuyerOrders() {
                             <>
                                 <button className="btn btn-primary btn-sm flex-fill" onClick={() => handleViewReceipt(order._id)}>Pay Now</button>
                                 <button className="btn btn-outline-danger btn-sm" onClick={() => handleOpenCancelModal(order)}><Trash2 size={16}/></button>
+                                <button className="btn btn-outline-success btn-sm" onClick={async () => {
+                                  setIsOpen(true);
+                                  await openChatWithUser(order.farmer, "farmer");
+                                }}>💬</button>
                             </>
                         ) : (
                             order.status !== "cancelled" && (
